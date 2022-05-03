@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  strapi:
+      container_name: strapi
+      build: .
+      image: mystrapi:latest
+      restart: unless-stopped
+      env_file: .env
+      environment:
+        DATABASE_CLIENT: ${DATABASE_CLIENT}
+        DATABASE_HOST: postgres
+        DATABASE_NAME: ${DATABASE_NAME}
+        DATABASE_USERNAME: ${DATABASE_USERNAME}
+        DATABASE_PORT: ${DATABASE_PORT}
+        JWT_SECRET: ${JWT_SECRET}
+        DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+        NODE_ENV: ${NODE_ENV}
+      links:
+        - postgres:postgres
+      volumes:
+        - ./config:/opt/app/config
+        - ./src:/opt/app/src
+        - ./package.json:/opt/package.json
+        - ./yarn.lock:/opt/yarn.lock
+        - ./.env:/opt/app/.env
+      ports:
+        - "1337:1337"
+      networks:
+        - strapi
+      depends_on:
+        - postgres
+
+  postgres:
+    image: postgres:12.0-alpine
+    container_name: postgres
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - ./data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    networks:
+      - strapi
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - strapi
+
+networks:
+  strapi:
+    name: Strapi
+    driver: bridge
